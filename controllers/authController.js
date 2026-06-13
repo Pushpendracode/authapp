@@ -14,7 +14,6 @@ const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Check if all fields are provided
     if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -22,7 +21,6 @@ const register = async (req, res) => {
       });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -31,8 +29,8 @@ const register = async (req, res) => {
       });
     }
 
-    // Create user (password gets hashed in model)
-    const user = await User.create({ username, email, password });
+    const user = new User({ username, email, password });
+    await user.save();
 
     res.status(201).json({
       success: true,
@@ -45,6 +43,7 @@ const register = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('REGISTER ERROR:', error.name, error.message);
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((e) => e.message);
       return res.status(400).json({ success: false, message: messages[0] });
@@ -59,7 +58,6 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if fields provided
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -67,7 +65,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Find user and include password
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(401).json({
@@ -76,7 +73,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Check password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -96,6 +92,7 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('LOGIN ERROR:', error.name, error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -105,7 +102,6 @@ const login = async (req, res) => {
 const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-
     res.status(200).json({
       success: true,
       user: {
@@ -116,6 +112,7 @@ const getProfile = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('PROFILE ERROR:', error.name, error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
